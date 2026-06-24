@@ -307,36 +307,44 @@
 
         .module-status {
             position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 10px;
-            height: 10px;
+            top: 3px;
+            right: 3px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: #333;
+            background: #3a1414;
+            border: 2px solid #6e2b2b;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.4);
             cursor: pointer;
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+            z-index: 5;
         }
 
-        /* for larger clickable area */
+        /* for larger clickable / tappable area */
         .module-status::before {
             content: '';
             position: absolute;
-            top: -6px;
-            right: -6px;
-            bottom: -6px;
-            left: -6px;
+            top: -10px;
+            right: -10px;
+            bottom: -10px;
+            left: -10px;
         }
 
         .module-status:hover {
-            box-shadow: 0 0 6px rgba(255,255,255,0.3);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.4), 0 0 8px rgba(255,255,255,0.35);
+        }
+
+        .module-status:active {
+            transform: scale(0.85);
         }
 
         .module-status.on {
             background: #44ff44;
+            border-color: #8fff8f;
         }
 
         .module-status.on:hover {
-            box-shadow: 0 0 8px rgba(68,255,68,0.7);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.4), 0 0 10px rgba(68,255,68,0.85);
         }
 
         .chain-connector {
@@ -942,9 +950,72 @@
         border-radius: 4px;
         transition: background-color 0.1s ease;
     }
+    /* ---- Simple View (effects chain only) ---- */
+    body.simple-view .sidebar,
+    body.simple-view .top-bar,
+    body.simple-view .patch-volume-container,
+    body.simple-view .effects-panel {
+        display: none !important;
+    }
+
+    body.simple-view .main-content {
+        width: 100%;
+    }
+
+    body.simple-view .signal-chain {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    body.simple-view .chain-flow {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 18px;
+    }
+
+    body.simple-view .chain-module {
+        cursor: pointer;
+        transform: scale(1.15);
+    }
+
+    body.simple-view .chain-module:active {
+        transform: scale(1.05);
+    }
+
+    /* hide the small corner dot in simple view since the whole tile is the toggle */
+    body.simple-view .module-status {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    #exitSimpleViewBtn {
+        display: none;
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        z-index: 50;
+        background: #2a2a2a;
+        color: #e0e0e0;
+        border: 1px solid #555;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    #exitSimpleViewBtn:hover {
+        border-color: #888;
+    }
+
+    body.simple-view #exitSimpleViewBtn {
+        display: block;
+    }
 </style>
 </head>
 <body>
+    <button id="exitSimpleViewBtn" title="Back to full editor">✕ Exit Simple View</button>
     <div class="main-container">
         <div class="sidebar">
             <div class="sidebar-header">
@@ -990,6 +1061,7 @@
                         </div>
                     </div>
 
+                    <button id="simpleViewBtn" class="settings-btn" title="Show only the effects chain">🎛️</button>
                     <button id="advancedSettingsBtn" class="settings-btn">⚙️</button>
                 </div>
             </div>
@@ -1016,7 +1088,7 @@
                         <rect x="8" y="54" width="64" height="70" rx="4" stroke="currentColor" stroke-width="2"/>
                         <circle cx="40" cy="9" r="4" stroke="currentColor" stroke-width="2"/>
                         </svg>
-                        <div class="module-status" id="module-status-0"></div>
+                        <div class="module-status" id="module-status-0" title="Tap to enable/disable"></div>
                         <div class="module-name">NR</div>
                         <div class="module-type">Noise Gate</div>
                     </div>
@@ -1035,7 +1107,7 @@
                         <rect x="8" y="68" width="64" height="55" rx="4" stroke="currentColor" stroke-width="2"/>
                         <circle cx="40" cy="9" r="4" stroke="currentColor" stroke-width="2"/>
                         </svg>
-                        <div class="module-status" id="module-status-1"></div>
+                        <div class="module-status" id="module-status-1" title="Tap to enable/disable"></div>
                         <div class="module-name">FX1</div>
                         <div class="module-type">Please sync</div>
                     </div>
@@ -1052,7 +1124,7 @@
                             <rect x="20" y="65" width="40" height="40" rx="6" stroke="currentColor" stroke-width="3"/>
                             <circle cx="40" cy="54" r="3" fill="currentColor"/>
                             </svg>
-                            <div class="module-status" id="module-status-2"></div><div class="module-name">DRV</div><div class="module-type">Please sync</div>
+                            <div class="module-status" id="module-status-2" title="Tap to enable/disable"></div><div class="module-name">DRV</div><div class="module-type">Please sync</div>
                         </div>
                         <div class="chain-connector"></div>
                         <div class="chain-module" data-module-id="3" data-is-fixed="true">
@@ -1067,7 +1139,7 @@
                                   <rect x="13" y="70" width="10" height="4" rx="2" fill="currentColor"/>
                                   <rect x="69" y="70" width="10" height="4" rx="2" fill="currentColor"/>
                                 </svg>
-                            <div class="module-status" id="module-status-3"></div><div class="module-name">AMP</div><div class="module-type">Please sync</div>
+                            <div class="module-status" id="module-status-3" title="Tap to enable/disable"></div><div class="module-name">AMP</div><div class="module-type">Please sync</div>
                         </div>
                         <div class="chain-connector"></div>
                         <div class="chain-module" data-module-id="4" data-is-fixed="true">
@@ -1084,7 +1156,7 @@
                             <rect x="15" y="120" width="10" height="4" rx="2" fill="currentColor"/>
                             <rect x="95" y="120" width="10" height="4" rx="2" fill="currentColor"/>
                             </svg>
-                            <div class="module-status" id="module-status-4"></div><div class="module-name">IR</div><div class="module-type">Please sync</div>
+                            <div class="module-status" id="module-status-4" title="Tap to enable/disable"></div><div class="module-name">IR</div><div class="module-type">Please sync</div>
                         </div>
                         <div class="chain-connector"></div>
                         <div class="chain-module" data-module-id="5" data-is-fixed="true">
@@ -1104,7 +1176,7 @@
                             <circle cx="50" cy="110" r="9" stroke="currentColor"/>
                             <circle cx="50" cy="110" r="12" stroke="currentColor" stroke-width="2"/>
                             </svg>
-                            <div class="module-status" id="module-status-5"></div><div class="module-name">EQ</div><div class="module-type">Please sync</div>
+                            <div class="module-status" id="module-status-5" title="Tap to enable/disable"></div><div class="module-name">EQ</div><div class="module-type">Please sync</div>
                         </div>
                     </div>
                     <div class="chain-connector"></div>
@@ -1123,7 +1195,7 @@
                         <rect x="8" y="68" width="64" height="55" rx="4" stroke="currentColor" stroke-width="2"/>
                         <circle cx="40" cy="9" r="4" stroke="currentColor" stroke-width="2"/>
                         </svg>
-                        <div class="module-status" id="module-status-6"></div>
+                        <div class="module-status" id="module-status-6" title="Tap to enable/disable"></div>
                         <div class="module-name">FX2</div>
                         <div class="module-type">Please sync</div>
                     </div>
@@ -1135,7 +1207,7 @@
                         <circle cx="50" cy="50" r="35" stroke="currentColor" stroke-width="2" stroke-opacity="0.4"/>
                         <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.2"/>
                         </svg>
-                        <div class="module-status" id="module-status-7"></div>
+                        <div class="module-status" id="module-status-7" title="Tap to enable/disable"></div>
                         <div class="module-name">DLY</div>
                         <div class="module-type">Please sync</div>
                     </div>
@@ -1152,7 +1224,7 @@
                         <path d="M54 43 C 56 45, 56 55, 54 57" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                         <path d="M56 41 C 59 45, 59 55, 56 59" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                         </svg>
-                        <div class="module-status" id="module-status-8"></div>
+                        <div class="module-status" id="module-status-8" title="Tap to enable/disable"></div>
                         <div class="module-name">RVB</div>
                         <div class="module-type">Please sync</div>
                     </div>
@@ -11733,10 +11805,22 @@
                 this.advancedSettingsBtn.addEventListener('click', () => {
                     this.advancedSettingsPanel.classList.toggle('visible');
                 });
+                document.getElementById('simpleViewBtn').addEventListener('click', () => {
+                    document.body.classList.add('simple-view');
+                });
+                document.getElementById('exitSimpleViewBtn').addEventListener('click', () => {
+                    document.body.classList.remove('simple-view');
+                });
                 this.moduleElements.forEach(module => {
                     module.addEventListener('click', event => {
                         if (event.target.closest('.module-status')) {
                             // Click was on the status indicator, so we ignore it here and let the status click handler manage it.
+                            return;
+                        }
+                        if (document.body.classList.contains('simple-view')) {
+                            // In Simple View the whole tile is the toggle - no panel to open.
+                            const dot = module.querySelector('.module-status');
+                            if (dot) dot.click();
                             return;
                         }
                         this.selectModule(parseInt(module.dataset.moduleId, 10));
@@ -11889,6 +11973,7 @@
                         if (enableToggle && !enableToggle.classList.contains('locked')) {
                             enableToggle.classList.toggle('on');
                             this.sendModuleState(moduleId, enableToggle.classList.contains('on'));
+                            this.updateModuleStatus(moduleId);
                         }
                         return;
                     }
@@ -11898,6 +11983,7 @@
                             const moduleId = parseInt(target.id.split('-')[2], 10);
                             target.classList.toggle('on');
                             this.sendModuleState(moduleId, target.classList.contains('on'));
+                            this.updateModuleStatus(moduleId);
                         } else {
                             target.classList.toggle('on');
                             this.onParameterChange(target);
