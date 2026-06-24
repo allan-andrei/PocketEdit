@@ -14,7 +14,7 @@ It was created as a fun side project using 99% AI programming logic and 100% har
 
 You can now directly access PocketEdit online!
 The latest version is always available directly here:
-**[https://suckyble.github.io/PocketEdit/](https://suckyble.github.io/PocketEdit/)**
+**[https://allan-andrei.github.io/PocketEdit/](https://allan-andrei.github.io/PocketEdit/)**
 
 ## **Features**
 
@@ -29,6 +29,10 @@ The latest version is always available directly here:
 * **Unsaved Preset Warning:** The app tracks your changes and warns you if you try to switch presets without saving your modifications.  
 * **Advanced Debugging Tools:** A hidden log panel contains manual sync buttons and a communication log for troubleshooting.
 * **Tap Tempo:** Use a tap tempo button to calculate milliseconds for delay settings, with 1/8, 1/8 Dotted, 1/4 and 1/2 setting.
+
+## **Added features**
+* **Quick toggle:** Quickly turn on/off an effect from the main screen
+* **Simple View:** A view made for live use case. It will only show the effect chain. Quick toggle is also applied here.
 
 ## **Requirements**
 
