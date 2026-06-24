@@ -238,8 +238,8 @@
         }
 
         .chain-module {
-            width: 120px;
-            height: 120px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(145deg, #404040, #303030);
             border: 2px solid #555;
             border-radius: 8px;
@@ -963,25 +963,33 @@
     }
 
     body.simple-view .signal-chain {
-        height: 100vh;
+        height: 100dvh;
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: hidden;
+        padding: 16px;
+        box-sizing: border-box;
     }
 
     body.simple-view .chain-flow {
         flex-wrap: wrap;
         justify-content: center;
+        align-content: center;
         gap: 18px;
+        max-width: 100%;
+        transform: scale(var(--simple-zoom, 1.15));
+        transform-origin: center center;
+        transition: transform 0.05s ease-out;
     }
 
     body.simple-view .chain-module {
         cursor: pointer;
-        transform: scale(1.15);
     }
 
     body.simple-view .chain-module:active {
-        transform: scale(1.05);
+        transform: scale(0.95);
     }
 
     /* hide the small corner dot in simple view since the whole tile is the toggle */
@@ -1012,10 +1020,66 @@
     body.simple-view #exitSimpleViewBtn {
         display: block;
     }
+
+    #simpleZoomControl {
+        display: none;
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 50;
+        background: #2a2a2a;
+        border: 1px solid #555;
+        border-radius: 24px;
+        padding: 8px 14px;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+
+    body.simple-view #simpleZoomControl {
+        display: flex;
+    }
+
+    #simpleZoomControl button {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid #555;
+        background: #1e1e1e;
+        color: #e0e0e0;
+        font-size: 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    #simpleZoomControl button:hover {
+        border-color: #888;
+    }
+
+    #simpleZoomControl input[type="range"] {
+        width: 120px;
+    }
+
+    #simpleZoomLabel {
+        font-size: 12px;
+        color: #aaa;
+        min-width: 38px;
+        text-align: center;
+    }
 </style>
 </head>
 <body>
     <button id="exitSimpleViewBtn" title="Back to full editor">✕ Exit Simple View</button>
+    <div id="simpleZoomControl">
+        <button id="simpleZoomOut" title="Zoom out">−</button>
+        <input type="range" id="simpleZoomSlider" min="50" max="250" value="115" step="5">
+        <button id="simpleZoomIn" title="Zoom in">+</button>
+        <span id="simpleZoomLabel">115%</span>
+    </div>
     <div class="main-container">
         <div class="sidebar">
             <div class="sidebar-header">
@@ -11807,10 +11871,76 @@
                 });
                 document.getElementById('simpleViewBtn').addEventListener('click', () => {
                     document.body.classList.add('simple-view');
+                    requestAnimationFrame(() => applyZoom(parseInt(zoomSlider.value, 10)));
                 });
                 document.getElementById('exitSimpleViewBtn').addEventListener('click', () => {
                     document.body.classList.remove('simple-view');
                 });
+
+                // --- Simple View zoom controls ---
+                const zoomSlider = document.getElementById('simpleZoomSlider');
+                const zoomLabel = document.getElementById('simpleZoomLabel');
+                const chainFlowElForZoom = document.querySelector('.chain-flow');
+                const signalChainEl = document.querySelector('.signal-chain');
+
+                const computeFitScale = () => {
+                    if (!chainFlowElForZoom || !signalChainEl) return 2.5;
+                    const currentScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--simple-zoom')) || 1;
+                    const rect = chainFlowElForZoom.getBoundingClientRect();
+                    const baseW = rect.width / currentScale;
+                    const baseH = rect.height / currentScale;
+                    if (baseW <= 0 || baseH <= 0) return 2.5;
+                    const availW = signalChainEl.clientWidth - 16;
+                    const availH = signalChainEl.clientHeight - 16;
+                    return Math.max(0.5, Math.min(availW / baseW, availH / baseH));
+                };
+
+                const applyZoom = (pct) => {
+                    pct = Math.min(250, Math.max(50, pct));
+                    const fitPct = computeFitScale() * 100;
+                    const effectivePct = Math.min(pct, fitPct);
+                    document.documentElement.style.setProperty('--simple-zoom', effectivePct / 100);
+                    zoomSlider.value = pct;
+                    zoomLabel.textContent = Math.round(effectivePct) + '%';
+                    try { localStorage.setItem('pocketEditSimpleZoom', pct); } catch (e) {}
+                };
+                let savedZoom = 115;
+                try {
+                    const stored = parseInt(localStorage.getItem('pocketEditSimpleZoom'), 10);
+                    if (!isNaN(stored)) savedZoom = stored;
+                } catch (e) {}
+                applyZoom(savedZoom);
+                zoomSlider.addEventListener('input', () => applyZoom(parseInt(zoomSlider.value, 10)));
+                document.getElementById('simpleZoomIn').addEventListener('click', () => applyZoom(parseInt(zoomSlider.value, 10) + 10));
+                document.getElementById('simpleZoomOut').addEventListener('click', () => applyZoom(parseInt(zoomSlider.value, 10) - 10));
+
+                // re-clamp on resize / orientation change so it never needs to scroll
+                window.addEventListener('resize', () => {
+                    if (document.body.classList.contains('simple-view')) {
+                        applyZoom(parseInt(zoomSlider.value, 10));
+                    }
+                });
+
+                // pinch-to-zoom support on touch devices, while in Simple View
+                let pinchStartDist = null;
+                let pinchStartZoom = 100;
+                const chainFlowEl = document.querySelector('.chain-flow');
+                chainFlowEl.addEventListener('touchstart', (e) => {
+                    if (!document.body.classList.contains('simple-view') || e.touches.length !== 2) return;
+                    const [a, b] = e.touches;
+                    pinchStartDist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+                    pinchStartZoom = parseInt(zoomSlider.value, 10);
+                }, { passive: true });
+                chainFlowEl.addEventListener('touchmove', (e) => {
+                    if (!document.body.classList.contains('simple-view') || e.touches.length !== 2 || !pinchStartDist) return;
+                    const [a, b] = e.touches;
+                    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+                    applyZoom(Math.round(pinchStartZoom * (dist / pinchStartDist)));
+                }, { passive: true });
+                chainFlowEl.addEventListener('touchend', (e) => {
+                    if (e.touches.length < 2) pinchStartDist = null;
+                }, { passive: true });
+
                 this.moduleElements.forEach(module => {
                     module.addEventListener('click', event => {
                         if (event.target.closest('.module-status')) {
